@@ -68,14 +68,14 @@ colnames(train_hogares)
 
 # Variables de HOGARES TEST
 skim(test_hogares)
-# P5000 - Cuartos en el hogar
-# P5010 - Cuartos para dormir
-# P5090 - (Factor) Vivienda y estado
-# P5100 - Pago pensual por cuota amort
-# P5130 - Estimacion de pago mensual
-# P5140 - Pago mensual de arriendo
-# Nper  - Numero personas en hogar
-# Npersug - Numero personas en unidad de gasto
+# Cuartos -        P5000 - Cuartos en el hogar
+# Cuartos_dormir - P5010 - Cuartos para dormir
+# EstadoVivienda - P5090 - (Factor) Vivienda y estado
+# Amort_mes      - P5100 - Pago mensual por cuota amort
+# Est_amort_mes  - P5130 - Estimacion de pago mensual
+# Arriendo_mes   - P5140 - Pago mensual de arriendo
+# Personas_hogar - Nper  - Numero personas en hogar
+# Personas_gasto - Npersug - Numero personas en unidad de gasto
 # Li    - Linea de indigencia
 # Lp    - Linea de Pobreza
 # Depto - (Factor) Departamento
@@ -83,6 +83,52 @@ skim(test_hogares)
 # Pobre - DUMMY en TRAIN
 # Ingpcug - “Ingreso percápita de la unidad de gasto con imputación de arriendo a propietarios y usufructuarios”
 skim(train_hogares)
+
+# Chequeo de los duplicados
+sum(duplicated(test_hogares$id))
+sum(duplicated(train_hogares$id))
+
+# rename(data, new = old)
+test_hogares <- test_hogares %>% rename(Cuartos = P5000, 
+                                        Cuartos_dormir = P5010, 
+                                        EstadoVivienda = P5090,
+                                        Amort_mes = P5100,
+                                        Est_amort_mes = P5130,
+                                        Arriendo_mes  = P5140,
+                                        Personas_hogar = Nper,
+                                        Personas_gasto = Npersug)
+
+train_hogares <- train_hogares %>% rename(Cuartos = P5000, 
+                                          Cuartos_dormir = P5010, 
+                                          EstadoVivienda = P5090,
+                                          Amort_mes = P5100,
+                                          Est_amort_mes = P5130,
+                                          Arriendo_mes  = P5140,
+                                          Personas_hogar = Nper,
+                                          Personas_gasto = Npersug)
+
+test_hogares <- test_hogares %>% mutate(EstadoVivienda = case_when(EstadoVivienda == 1 ~ "Propia",
+                                                                   EstadoVivienda == 2 ~ "Propia-Pagando",
+                                                                   EstadoVivienda == 3 ~ "Arriendo",
+                                                                   EstadoVivienda == 4 ~ "Usufructo",
+                                                                   EstadoVivienda == 5 ~ "Posesion_sin_titulo",
+                                                                   EstadoVivienda == 6 ~ "Otra"))
+  
+train_hogares <- train_hogares %>% mutate(EstadoVivienda = case_when(EstadoVivienda == 1 ~ "Propia",
+                                                                     EstadoVivienda == 2 ~ "Propia-Pagando",
+                                                                     EstadoVivienda == 3 ~ "Arriendo",
+                                                                     EstadoVivienda == 4 ~ "Usufructo",
+                                                                     EstadoVivienda == 5 ~ "Posesion_sin_titulo",
+                                                                     EstadoVivienda == 6 ~ "Otra"))
+
+# Definimos las variables categóricas para hogares
+variables_categoricas_hogares <- c("EstadoVivienda",
+                                   "Depto")
+
+test_hogares <- test_hogares %>% mutate_at(variables_categoricas_hogares, as.factor)
+train_hogares <- train_hogares %>% mutate_at(variables_categoricas_hogares, as.factor)
+
+
 
 
 # Variables de PERSONAS TEST
@@ -113,19 +159,6 @@ skim(test_personas)
 
 # Ingtot - TRAIN Ingreso total
 skim(train_personas)
-
-
-# Chequeo de los duplicados
-sum(duplicated(test_hogares$id))
-sum(duplicated(train_hogares$id))
-
-
-# Definimos las variables categóricas para hogares
-variables_categoricas_hogares <- c("P5090",
-                                   "Depto")
-                           
-test_hogares <- test_hogares %>% mutate_at(variables_categoricas_hogares, as.factor)
-train_hogares <- train_hogares %>% mutate_at(variables_categoricas_hogares, as.factor)
 
 
 # Definimos las variables categóricas para personas
