@@ -876,3 +876,193 @@ write.csv(test %>% select(property_id) %>% bind_cols(pred3),file = 'random_fores
 
 
 
+##__________ RIDGE. LASSO Y ELASTIC NET  (YA LO HAGO CON 0,5 = ELASTINC NET)           
+
+
+## LASSO
+
+lasso_recipe_lp <- recipe(Lp ~ edad_prom_hogar + Nper +  P5000 +  casa_propia_paga  + cantidad_pet_hogar + educ_prom_hogar +  pension_hogar + Depto + desempleados, data = train_hogares) %>% 
+  step_novel(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors())
+
+
+# Definir las especificaciones del modelo Lasso
+lasso_spec2 <- 
+  linear_reg(penalty = tune(), mixture = 1) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet") 
+
+# Crear un flujo de trabajo que incluye la receta de preprocesamiento y el modelo Lasso
+lasso_workflow <- workflow() %>%
+  add_recipe(lasso_recipe_lp) %>%
+  add_model(lasso_spec2)
+
+
+# Utilizar 'grid_regular' para generar una cuadrícula de valores de penalización
+penalty_grid <- grid_regular(penalty(range = c(-30, 30)), levels = 50)
+
+
+
+
+# Realizar la búsqueda de hiperparámetros utilizando tune_grid
+tune_res3 <- tune_grid(
+  lasso_workflow,
+  resamples = df_fold, 
+  grid = penalty_grid,
+  metrics = metric_set(rmse)
+)
+
+
+
+
+# Crear un gráfico para visualizar los resultados de la búsqueda 
+#de hiperparámetros
+autoplot(tune_res3)
+
+best_penalty <- select_best(tune_res3, metric = "rmse")
+best_penalty
+
+lasso_final <- finalize_workflow(lasso_workflow, best_penalty)
+
+# Ajustar el modelo de regresión Lasso utilizando los datos de entrenamiento
+lasso_final_fit <- fit(lasso_final, data = train_data)
+
+
+
+test_data <- test_data %>%
+  mutate(predicciones_lasso = predict(lasso_final_fit, test_data))
+
+test_data$Pobre_lasso <- ifelse(test_data$predicciones_lasso > test_data$Lp, 0, ifelse(test_hogares$predicciones_lasso < test_data$Lp, 1, NA))
+
+
+test_data <- test_data %>%
+  mutate(Pobre_lasso=factor(Pobre_lasso,levels=c(0,1),labels=c("No pobre","Pobre")))
+
+
+
+# Matriz de confusión
+confusion_matrix_lasso_lp<- conf_mat(test_data, truth = Pobre, estimate = Pobre_lasso)
+
+# Imprimimos la matriz
+print(confusion_matrix_lasso_lp)
+
+accuracy_lasso_lp <- accuracy(test_data, truth = Pobre, estimate = Pobre_lasso)
+accuracy_lasso_lp
+
+## ACCURACY 38,5%
+## (muy bajita, aqui se tiene en cuenta despedidos, pension y deprtamento)
+
+
+test_hogares <- test_hogares %>%
+  mutate(predicciones_lasso = predict(lasso_final_fit, test_data))
+
+test_hogares$Pobre_lasso <- ifelse(test_hogares$predicciones_lasso > test_hogares$Lp, 0, ifelse(test_hogares$predicciones_lasso < test_hogares$Lp, 1, NA))
+
+
+
+prediccion_lasso_lp <- predict( lasso_final_fit , new_data=test_hogares)
+prediccion_lasso_pobre
+write.csv(test_hogares %>% select(id) %>% bind_cols(test_hogares$Pobre_lasso),file = 'lasso_linea_pobreza.csv')
+
+summary (factor(test_hogares$Pobre_lasso))
+## MAS BALANCEADA ESTA PREDICCION EN REGRESION (0= 35,290 Y 1= 30,878 )
+## mal resultado solo logro 0,22
+
+
+
+## ELASTIC NET
+
+## LASSO
+
+elastic_recipe_lp <- recipe(Lp ~ edad_prom_hogar +   P5000 +  casa_propia_paga  + educ_prom_hogar + Depto + desempleados, data = train_hogares) %>% 
+  step_novel(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors())
+
+
+# Definir las especificaciones del modelo Lasso
+elastic_spec <- 
+  linear_reg(penalty = tune(), mixture = 0.5) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet") 
+
+# Crear un flujo de trabajo que incluye la receta de preprocesamiento y el modelo Lasso
+elastic_workflow <- workflow() %>%
+  add_recipe(elastic_recipe_lp) %>%
+  add_model(elastic_spec)
+
+
+# Utilizar 'grid_regular' para generar una cuadrícula de valores de penalización
+penalty_grid <- grid_regular(penalty(range = c(-20, 20)), levels = 100)
+
+
+
+
+# Realizar la búsqueda de hiperparámetros utilizando tune_grid
+tune_res4 <- tune_grid(
+  elastic_workflow,
+  resamples = df_fold, 
+  grid = penalty_grid,
+  metrics = metric_set(rmse)
+)
+
+
+
+
+# Crear un gráfico para visualizar los resultados de la búsqueda 
+#de hiperparámetros
+autoplot(tune_res4)
+
+best_penalty <- select_best(tune_res4, metric = "rmse")
+best_penalty
+
+elastic_final <- finalize_workflow(elastic_workflow, best_penalty)
+
+# Ajustar el modelo de regresión Lasso utilizando los datos de entrenamiento
+elastic_final_fit <- fit(elastic_final, data = train_data)
+
+
+
+test_data <- test_data %>%
+  mutate(predicciones_elastic = predict(elastic_final_fit, test_data))
+
+test_data$Pobre_elastic <- ifelse(test_data$predicciones_elastic > test_data$Lp, 0, ifelse(test_data$predicciones_elastic < test_data$Lp, 1,NA))
+
+
+test_data <- test_data %>%
+  mutate(Pobre_elastic=factor(Pobre_elastic,levels=c(0,1),labels=c("No pobre","Pobre")))
+
+
+
+# Matriz de confusión
+confusion_matrix_elastic_lp<- conf_mat(test_data, truth = Pobre, estimate = Pobre_elastic)
+
+# Imprimimos la matriz
+print(confusion_matrix_elastic_lp)
+
+accuracy_elastic_lp <- accuracy(test_data, truth = Pobre, estimate = Pobre_elastic)
+accuracy_elastic_lp
+
+## ACCURACY 32,8%
+## (muy bajita, aqui se tiene en cuenta despedidos, pension y deprtamento)
+
+
+test_hogares <- test_hogares %>%
+  mutate(predicciones_elastic = predict(elastic_final_fit, test_hogares))
+
+test_hogares$Pobre_elastic <- ifelse(test_hogares$predicciones_elastic > test_hogares$Lp, 0, ifelse(test_hogares$predicciones_elastic < test_hogares$Lp, 1, NA))
+
+
+
+write.csv(test_hogares %>% select(id) %>% bind_cols(test_hogares$Pobre_elastic),file = 'elastic_net_linea_pobreza.csv')
+
+summary (factor(test_hogares$Pobre_elastic))
+## MAS BALANCEADA ESTA PREDICCION EN REGRESION (0= 35,303 Y 1= 30,865 )
+
+
+
+## INTENTO PERO SIN PENSION_HOGAR, NI NUMERO DE PERSONAS DE HOGAR NI NUMERO PERSONAS PET
+## (QUITANDO PENSION_HOGAR, NUMERO PERSONAS PET Y NUMERO PERSONAS CAMBIA MUCHO)
+
+## AHORA CON ESOS NUEVAS VARIABLES POR FUERA DA (0= 18,263 Y 1=47,905)
