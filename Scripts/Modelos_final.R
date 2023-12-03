@@ -26,8 +26,7 @@ caracteristicas_edad <- train_personas %>%
   summarize(
     cantidad_personas = n(),
     suma_edades = sum(P6040),
-    edad_prom_hogar = round(suma_edades / cantidad_personas, 1),
-  )
+    edad_prom_hogar = round(suma_edades / cantidad_personas, 1))
 
 # Creamos una nueva variable dummy llamada Iof2_dummy
 train_personas$Iof2_dummy <- ifelse(train_personas$Iof2 > 1, 1, ifelse(is.na(train_personas$Iof2) | train_personas$Iof2 <= 1, 0, NA))
