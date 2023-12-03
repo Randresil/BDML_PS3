@@ -335,12 +335,7 @@ test_hogares <- test_hogares %>%
 
 
 
-##____________ RANDOM FOREST
-
-
-
-
-
+## RANDOM FOREST -----------------
 library(caret)
 library(tidymodels)
 
@@ -547,7 +542,7 @@ receta_depto <- recipe(Pobre ~ edad_prom_hogar + Nper  + P5000 +  casa_propia_pa
 
 
 
-## RIDGE Y LASSO
+## RIDGE Y LASSO ------------------
 
 # Esto se utilizará para evaluar el rendimiento del modelo en diferentes subconjuntos de  datos durante la validación cruzada.
 df_fold <- vfold_cv(train_hogares, v = 5)
