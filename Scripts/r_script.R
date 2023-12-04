@@ -362,6 +362,9 @@ write.csv(train_hogares, file = "train_hogares2.csv")
 write.csv(test_hogares, file = "test_hogares2.csv")
 
 rm(list = ls())
+getwd()
+directorio <- "/Users/ricardoandressilvatorres/Documents/Universidad/Maestria/2. Segundo Semestre/Big Data - Machine Learning/Problem sets/PS3"
+setwd(directorio)
 
 train_personas <- read.csv("train_personas2.csv")
 train_hogares <- read.csv("train_hogares2.csv")
@@ -559,7 +562,44 @@ test_hogares <- test_hogares %>% mutate(hogar_propio_arr = ifelse(EstadoVivienda
 test_hogares <- test_hogares %>% mutate(hogar_usu_otro = ifelse(EstadoVivienda == "Posesion_sin_titulo" | EstadoVivienda == "Otro" | EstadoVivienda == "Usufructo", 1, 0))
 
 
+## Estadisticas descriptivas ------------------
+test_hogares <- test_hogares %>% select(-X, -Fex_c, -Fex_dpto, -Li)
 
+test_personas <- test_personas %>% select(Orden, Clase, Dominio, Sexo, Edad, Parentesco, Estado_SegS, Reg_Salud, NivelEduc,
+                                          Educacion, Actividad, Oficio, Tiempo_Trabajo, Posicion_Ocu, Horas_trabajo, Pension,
+                                          Otro_trabajo, Mas_horas_Trabajo, Pago_arr_pen, Pago_otros, Pet, Oc, Des, Ina, Depto,
+                                          train)
+
+train_hogares <- train_hogares %>% select(-X, -Fex_c, -Fex_dpto, -Li)
+
+train_personas <- train_personas %>% select(Orden, Clase, Dominio, Sexo, Edad, Parentesco, Estado_SegS, Reg_Salud, NivelEduc,
+                                          Educacion, Actividad, Oficio, Tiempo_Trabajo, Posicion_Ocu, Horas_trabajo, Pension,
+                                          Otro_trabajo, Mas_horas_Trabajo, Pago_arr_pen, Pago_otros, Pet, Oc, Des, Ina, Depto,
+                                          train)
+
+stargazer(test_hogares,
+          type = "text",
+          out = "estad_test_hogares.htm",
+          title = "Estadisticas Descriptivas Test-Hogares",
+          digits = 1)
+
+stargazer(train_hogares,
+          type = "text",
+          out = "estad_train_hogares.htm",
+          title = "Estadisticas Descriptivas Train-Hogares",
+          digits = 1)
+
+stargazer(test_personas,
+          type = "text",
+          out = "estad_test_personas.htm",
+          title = "Estadisticas Descriptivas Test-Personas",
+          digits = 1)
+
+stargazer(train_personas,
+          type = "text",
+          out = "estad_train_personas.htm",
+          title = "Estadisticas Descriptivas Train-Personas",
+          digits = 1)
 
 
 ## MODELOS ------------------
