@@ -461,6 +461,10 @@ train_hogares <- left_join(train_hogares, desempleo, by = "id")
 rm(desempleo)
 
 
+train_hogares <- train_hogares %>% mutate(hogar_propio_arr = ifelse(EstadoVivienda == "Propia" | EstadoVivienda == "Propia-Pagando" | EstadoVivienda == "Arriendo", 1, 0))
+train_hogares <- train_hogares %>% mutate(hogar_usu_otro = ifelse(EstadoVivienda == "Posesion_sin_titulo" | EstadoVivienda == "Otro" | EstadoVivienda == "Usufructo", 1, 0))
+
+
 
 
 # Ahora con las bases de test
@@ -551,20 +555,113 @@ test_hogares <- left_join(test_hogares, desempleo, by = "id")
 rm(desempleo)
 
 
+test_hogares <- test_hogares %>% mutate(hogar_propio_arr = ifelse(EstadoVivienda == "Propia" | EstadoVivienda == "Propia-Pagando" | EstadoVivienda == "Arriendo", 1, 0))
+test_hogares <- test_hogares %>% mutate(hogar_usu_otro = ifelse(EstadoVivienda == "Posesion_sin_titulo" | EstadoVivienda == "Otro" | EstadoVivienda == "Usufructo", 1, 0))
+
+
+
 
 
 ## MODELOS ------------------
 # Modelo de RF
 # Variables a considerar:
-# Cuartos + Cuartos_dormir + EstadoVivienda + Est_amort_mes + Personas_hogar + Depto + edad_max + tiempo_edu + educ_superior + educ_media + 
+# Cuartos + Cuartos_dormir + EstadoVivienda + Est_amort_mes + Personas_hogar + Depto + edad_max + tiempo_edu + educ_superior + educ_media + regimen_salud_cont + horas_trabajo_total + pension + Pago_arr_pen + Pago_otros + desempleo 
+train_hogares$Pobre <- as.factor(train_hogares$Pobre)
+
+test_hogares <- test_hogares %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate_if(is.factor, as.numeric) %>%
+  mutate_if(is.logical, as.numeric)
 
 
 
-#receta_test_adicional <- recipe(Pobre ~ edad_prom_hogar + Nper  + P5000 +  casa_propia_paga  + cantidad_pet_hogar + educ_prom_hogar + desempleados, data = train_data) %>% 
-#  step_novel(all_nominal_predictors()) %>% 
-#  step_dummy(all_nominal_predictors()) %>% 
-#  step_zv(all_predictors())
+rf_grid_random <- grid_random(mtry(range = c(2, 8)),
+                              min_n(range = c(1, 10)),
+                              trees(range = c(100, 200)), size = 4)
+
+# EstadoVivienda me arroja errores
+receta1 <- recipe(Pobre ~ Cuartos + Cuartos_dormir + Est_amort_mes + Personas_hogar + Depto + edad_max + tiempo_edu + educ_superior + educ_media + regimen_salud_cont +
+                    horas_trabajo_total + pension + Pago_arr_pen + Pago_otros + desempleo, data = train_hogares) %>%
+  step_impute_mean(all_predictors()) %>%
+  step_novel(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors())
+
+rf_spec <- rand_forest(
+  trees = tune(),
+  min_n =   tune(),
+  mtry =  tune()) %>% 
+  set_engine("randomForest") %>%
+  set_mode("classification")
+
+workflow1 <- workflow() %>%
+  add_recipe(receta1) %>%
+  add_model(rf_spec)
+
+df_fold <- vfold_cv(train_hogares, v = 4)
+
+tune_rf <- tune_grid(
+  workflow1,
+  resamples = df_fold, 
+  grid = rf_grid_random,
+  metrics = metric_set(f_meas))
 
 
+# Obtener el mejor hiper-parámetro
+best_params_rf <- tune_rf %>% select_best(metric = "f_meas")
+best_params_rf
+
+# Entrenar el modelo con el mejor hiper-parámetro
+best_rf_fit <- finalize_workflow(workflow1, best_params_rf) %>%
+  fit(data = train_hogares)
+
+prediccion_random_forest1 <- predict(best_rf_fit, new_data=test_hogares)
+prediccion_random_forest1$.pred_class <- as.numeric(prediccion_random_forest1$.pred_class)-1 # Para ser el 1 pobre
+write.csv(test_hogares %>% select(id) %>% bind_cols(prediccion_random_forest1) %>% rename(pobre = .pred_class)
+            , file = 'prediccion_forest.csv', row.names = FALSE)
+
+
+
+
+
+receta2 <- recipe(Pobre ~ Cuartos + Cuartos_dormir + Est_amort_mes + Personas_hogar + hogar_propio_arr + Depto + edad_max + tiempo_edu + educ_superior + educ_media + regimen_salud_cont +
+                    horas_trabajo_total + pension + Pago_arr_pen + Pago_otros + desempleo, data = train_hogares) %>%
+  step_impute_mean(all_predictors()) %>%
+  step_novel(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors())
+
+rf_spec <- rand_forest(
+  trees = tune(),
+  min_n =   tune(),
+  mtry =  tune()) %>% 
+  set_engine("randomForest") %>%
+  set_mode("classification")
+
+workflow2 <- workflow() %>%
+  add_recipe(receta2) %>%
+  add_model(rf_spec)
+
+df_fold <- vfold_cv(train_hogares, v = 4)
+
+tune_rf <- tune_grid(
+  workflow2,
+  resamples = df_fold, 
+  grid = rf_grid_random,
+  metrics = metric_set(f_meas))
+
+
+# Obtener el mejor hiper-parámetro
+best_params_rf <- tune_rf %>% select_best(metric = "f_meas")
+best_params_rf
+
+# Entrenar el modelo con el mejor hiper-parámetro
+best_rf_fit <- finalize_workflow(workflow2, best_params_rf) %>%
+  fit(data = train_hogares)
+
+prediccion_random_forest2 <- predict(best_rf_fit, new_data=test_hogares)
+prediccion_random_forest2$.pred_class <- as.numeric(prediccion_random_forest2$.pred_class)-1 # Para ser el 1 pobre
+write.csv(test_hogares %>% select(id) %>% bind_cols(prediccion_random_forest2) %>% rename(pobre = .pred_class)
+          , file = 'prediccion_forest2.csv', row.names = FALSE)
 
 
