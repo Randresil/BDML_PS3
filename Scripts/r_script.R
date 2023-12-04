@@ -354,33 +354,199 @@ test_personas <- test_personas %>% mutate_at(variables_categoricas_personas, as.
 
 
 ## Creacion variables desde Personas a Hogares -----------
-# Creacion de variables de edad de jefe de hogar
+# Test hogares con 66168 obs
+# Train hogares con 164960 obs
+rm(list = ls())
+write.csv(train_personas, file = "train_personas2.csv")
+write.csv(test_personas, file = "test_personas2.csv")
+write.csv(train_hogares, file = "train_hogares2.csv")
+write.csv(test_hogares, file = "test_hogares2.csv")
+
+train_personas <- read.csv("train_personas2.csv")
+train_hogares <- read.csv("train_hogares2.csv")
+test_personas <- read.csv("test_personas2.csv")
+test_hogares <- read.csv("test_hogares2.csv")
+
+
 
 edad_jefe <- train_personas %>% filter(Parentesco == "Jefe") %>% 
                 group_by(id) %>% 
                   summarise(edad_max = max(Edad))
 summary(edad_jefe)
-train_hogares <- left_join(train_hogares,edad_jefe)
+train_hogares <- left_join(train_hogares,edad_jefe, by = "id")
+rm(edad_jefe)
+
 
 edad_promedio <- train_personas %>% 
   group_by(id) %>% 
   summarise(Promedio_edad = mean(Edad, na.rm = TRUE))
 summary(edad_promedio)
-train_hogares <- left_join(train_hogares,edad_promedio)
+train_hogares <- left_join(train_hogares,edad_promedio, by = "id")
+rm(edad_promedio)
 
 
+educacion_suma <- train_personas %>% 
+  group_by(id) %>% 
+  summarise(tiempo_edu = sum(Educacion, na.rm = TRUE))
+summary(educacion_suma)
+train_hogares <- left_join(train_hogares,educacion_suma, by = "id")
+rm(educacion_suma)
 
+
+educacion_superior <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(educ_superior = ifelse(NivelEduc == "Superior", 1, 0))
+summary(educacion_superior)
+train_hogares <- left_join(train_hogares, educacion_superior, by = "id")
+rm(educacion_superior)
+
+
+educacion_media <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(educ_media = ifelse(NivelEduc == "Media", 1, 0))
+summary(educacion_media)
+train_hogares <- left_join(train_hogares, educacion_media, by = "id")
+rm(educacion_media)
+
+
+reg_salud <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(regimen_salud_cont = ifelse(Reg_Salud == "Contributivo", 1, 0))
+summary(reg_salud)
+train_hogares <- left_join(train_hogares,reg_salud, by = "id")
+rm(reg_salud)
+
+
+trabajo_suma <- train_personas %>% 
+  group_by(id) %>% 
+  summarise(horas_trabajo_total = sum(Horas_trabajo, na.rm = TRUE))
+summary(trabajo_suma)
+train_hogares <- left_join(train_hogares,trabajo_suma, by = "id")
+rm(trabajo_suma)
+
+
+cot_pension <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(pension = ifelse(Pension == "si", 1, 0))
+summary(cot_pension)
+train_hogares <- left_join(train_hogares, cot_pension, by = "id")
+rm(cot_pension)
+
+
+pago_arriendo_pen <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == 1, 1, 0))
+summary(pago_arriendo_pen)
+train_hogares <- left_join(train_hogares, pago_arriendo_pen, by = "id")
+rm(pago_arriendo_pen)
+
+
+pago_otros <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(Pago_otros = ifelse(Pago_otros == 1, 1, 0))
+summary(pago_otros)
+train_hogares <- left_join(train_hogares, pago_otros, by = "id")
+rm(pago_otros)
+
+
+desempleo <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(desempleo = ifelse(Actividad == "Buscando", 1, 0))
+summary(desempleo)
+train_hogares <- left_join(train_hogares, desempleo, by = "id")
+rm(desempleo)
+
+
+# Ahora con las bases de test
 edad_jefe <- test_personas %>% filter(Parentesco == "Jefe") %>% 
               group_by(id) %>% 
                 summarise(edad_max = max(Edad))
 summary(edad_jefe)
-test_hogares <- left_join(test_hogares,edad_jefe)
+test_hogares <- left_join(test_hogares,edad_jefe, by = "id")
+rm(edad_jefe)
+
 
 edad_promedio <- test_personas %>% 
   group_by(id) %>% 
   summarise(Promedio_edad = mean(Edad, na.rm = TRUE))
 summary(edad_promedio)
-test_hogares <- left_join(test_hogares,edad_promedio)
+test_hogares <- left_join(test_hogares,edad_promedio, by = "id")
+rm(edad_promedio)
+
+
+educacion_suma <- test_personas %>% 
+  group_by(id) %>% 
+  summarise(tiempo_edu = sum(Educacion, na.rm = TRUE))
+summary(educacion_suma)
+test_hogares <- left_join(test_hogares,educacion_suma, by = "id")
+rm(educacion_suma)
+
+
+educacion_superior <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(educ_superior = ifelse(NivelEduc == "Superior", 1, 0))
+summary(educacion_superior)
+test_hogares <- left_join(test_hogares,educacion_superior, by = "id")
+rm(educacion_superior)
+
+
+educacion_media <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(educ_media = ifelse(NivelEduc == "Media", 1, 0))
+summary(educacion_media)
+test_hogares <- left_join(test_hogares, educacion_media, by = "id")
+rm(educacion_media)
+
+
+reg_salud <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(regimen_salud_cont = ifelse(Reg_Salud == "Contributivo", 1, 0))
+summary(reg_salud)
+test_hogares <- left_join(test_hogares,reg_salud, by = "id")
+rm(reg_salud)
+
+trabajo_suma <- test_personas %>% 
+  group_by(id) %>% 
+  summarise(horas_trabajo_total = sum(Horas_trabajo, na.rm = TRUE))
+summary(trabajo_suma)
+test_hogares <- left_join(test_hogares,trabajo_suma, by = "id")
+rm(trabajo_suma)
+
+
+cot_pension <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(pension = ifelse(Pension == "si", 1, 0))
+summary(cot_pension)
+test_hogares <- left_join(test_hogares, cot_pension, by = "id")
+rm(cot_pension)
+
+
+pago_arriendo_pen <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == 1, 1, 0))
+summary(pago_arriendo_pen)
+test_hogares <- left_join(test_hogares, pago_arriendo_pen, by = "id")
+rm(pago_arriendo_pen)
+
+
+pago_otros <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(Pago_otros = ifelse(Pago_otros == 1, 1, 0))
+summary(pago_otros)
+test_hogares <- left_join(test_hogares, pago_otros, by = "id")
+rm(pago_otros)
+
+
+desempleo <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+  group_by(id) %>% 
+  summarise(desempleo = ifelse(Actividad == "Buscando", 1, 0))
+summary(desempleo)
+test_hogares <- left_join(test_hogares, desempleo, by = "id")
+rm(desempleo)
+
+
+
+
 
 
 
