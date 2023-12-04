@@ -66,7 +66,9 @@ colnames(train_personas)
 colnames(test_hogares)
 colnames(train_hogares)
 
-# Variables de HOGARES TEST
+
+
+## Variables de HOGARES TEST -------------
 skim(test_hogares)
 # Cuartos -        P5000 - Cuartos en el hogar
 # Cuartos_dormir - P5010 - Cuartos para dormir
@@ -131,7 +133,7 @@ train_hogares <- train_hogares %>% mutate_at(variables_categoricas_hogares, as.f
 
 
 
-# Variables de PERSONAS TEST
+## Variables de PERSONAS TEST ---------
 skim(test_personas)
 # La columna id identifica el hogar y orden es la identif<icación de persona
 # id    - identificador
@@ -175,7 +177,8 @@ test_personas <- test_personas %>% rename(Sexo = P6020,
                                           Otro_trabajo = P7040,
                                           Mas_horas_Trabajo = P7090,
                                           Pago_arr_pen = P7495,
-                                          Pago_otros = P7505)
+                                          Pago_otros = P7505,
+                                          Educacion = P6210s1)
 
 # rename(data, new = old)
 train_personas <- train_personas %>% rename(Sexo = P6020,
@@ -192,7 +195,8 @@ train_personas <- train_personas %>% rename(Sexo = P6020,
                                             Otro_trabajo = P7040,
                                             Mas_horas_Trabajo = P7090,
                                             Pago_arr_pen = P7495,
-                                            Pago_otros = P7505)
+                                            Pago_otros = P7505,
+                                            Educacion = P6210s1)
 
 unique(test_personas$Parentesco)
 unique(test_personas$Reg_Salud)
@@ -346,5 +350,37 @@ variables_categoricas_personas <- c("Sexo",
 
 train_personas  <- train_personas %>% mutate_at(variables_categoricas_personas, as.factor)
 test_personas <- test_personas %>% mutate_at(variables_categoricas_personas, as.factor)
+
+
+
+## Creacion variables desde Personas a Hogares -----------
+# Creacion de variables de edad de jefe de hogar
+
+edad_jefe <- train_personas %>% filter(Parentesco == "Jefe") %>% 
+                group_by(id) %>% 
+                  summarise(edad_max = max(Edad))
+summary(edad_jefe)
+train_hogares <- left_join(train_hogares,edad_jefe)
+
+edad_promedio <- train_personas %>% 
+  group_by(id) %>% 
+  summarise(Promedio_edad = mean(Edad, na.rm = TRUE))
+summary(edad_promedio)
+train_hogares <- left_join(train_hogares,edad_promedio)
+
+
+
+edad_jefe <- test_personas %>% filter(Parentesco == "Jefe") %>% 
+              group_by(id) %>% 
+                summarise(edad_max = max(Edad))
+summary(edad_jefe)
+test_hogares <- left_join(test_hogares,edad_jefe)
+
+edad_promedio <- test_personas %>% 
+  group_by(id) %>% 
+  summarise(Promedio_edad = mean(Edad, na.rm = TRUE))
+summary(edad_promedio)
+test_hogares <- left_join(test_hogares,edad_promedio)
+
 
 
