@@ -662,6 +662,5 @@ best_rf_fit <- finalize_workflow(workflow2, best_params_rf) %>%
 prediccion_random_forest2 <- predict(best_rf_fit, new_data=test_hogares)
 prediccion_random_forest2$.pred_class <- as.numeric(prediccion_random_forest2$.pred_class)-1 # Para ser el 1 pobre
 write.csv(test_hogares %>% select(id) %>% bind_cols(prediccion_random_forest2) %>% rename(pobre = .pred_class)
-          , file = 'prediccion_forest2.csv', row.names = FALSE)
-
+          , file = 'prediccion_random_forest2.csv', row.names = FALSE)
 
