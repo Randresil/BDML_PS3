@@ -209,7 +209,7 @@ unique(test_personas$Mas_horas_Trabajo)
 unique(test_personas$Pago_arr_pen)
 unique(test_personas$Pago_otros)
 
-test_personas <- test_personas %>% mutate(EstadoVivienda = case_when(Sexo == 1 ~ "hombre",
+test_personas <- test_personas %>% mutate(Sexo = case_when(Sexo == 1 ~ "hombre",
                                                                      Sexo == 2 ~ "mujer"),
                                           Parentesco = case_when(Parentesco == 1 ~ "Jefe",
                                                                  Parentesco == 2 ~ "Pareja",
@@ -238,12 +238,12 @@ test_personas <- test_personas %>% mutate(EstadoVivienda = case_when(Sexo == 1 ~
                                                                 NivelEduc == 6 ~ "Superior",
                                                                 NivelEduc == 9 ~ "No sabe"),
                                           
-                                          Actividad = case_when(NivelEduc == 1 ~ "Trabajando",
-                                                                NivelEduc == 2 ~ "Buscando",
-                                                                NivelEduc == 3 ~ "Estudiando",
-                                                                NivelEduc == 4 ~ "Oficios",
-                                                                NivelEduc == 5 ~ "Incapacitado",
-                                                                NivelEduc == 6 ~ "Otro"),
+                                          Actividad = case_when(Actividad == 1 ~ "Trabajando",
+                                                                Actividad == 2 ~ "Buscando",
+                                                                Actividad == 3 ~ "Estudiando",
+                                                                Actividad == 4 ~ "Oficios",
+                                                                Actividad == 5 ~ "Incapacitado",
+                                                                Actividad == 6 ~ "Otro"),
                                           
                                           Posicion_Ocu = case_when(Posicion_Ocu == 1 ~ "Obrero Particular",
                                                                    Posicion_Ocu == 2 ~ "Obrero Gobierno",
@@ -272,7 +272,7 @@ test_personas <- test_personas %>% mutate(EstadoVivienda = case_when(Sexo == 1 ~
                                                                  
 
 
-train_personas <- train_personas %>% mutate(EstadoVivienda = case_when(Sexo == 1 ~ "hombre",
+train_personas <- train_personas %>% mutate(Sexo = case_when(Sexo == 1 ~ "hombre",
                                                                      Sexo == 2 ~ "mujer"),
                                           Parentesco = case_when(Parentesco == 1 ~ "Jefe",
                                                                  Parentesco == 2 ~ "Pareja",
@@ -301,12 +301,12 @@ train_personas <- train_personas %>% mutate(EstadoVivienda = case_when(Sexo == 1
                                                                 NivelEduc == 6 ~ "Superior",
                                                                 NivelEduc == 9 ~ "No sabe"),
                                           
-                                          Actividad = case_when(NivelEduc == 1 ~ "Trabajando",
-                                                                NivelEduc == 2 ~ "Buscando",
-                                                                NivelEduc == 3 ~ "Estudiando",
-                                                                NivelEduc == 4 ~ "Oficios",
-                                                                NivelEduc == 5 ~ "Incapacitado",
-                                                                NivelEduc == 6 ~ "Otro"),
+                                          Actividad = case_when(Actividad == 1 ~ "Trabajando",
+                                                                Actividad == 2 ~ "Buscando",
+                                                                Actividad == 3 ~ "Estudiando",
+                                                                Actividad == 4 ~ "Oficios",
+                                                                Actividad == 5 ~ "Incapacitado",
+                                                                Actividad == 6 ~ "Otro"),
                                           
                                           Posicion_Ocu = case_when(Posicion_Ocu == 1 ~ "Obrero Particular",
                                                                    Posicion_Ocu == 2 ~ "Obrero Gobierno",
@@ -356,17 +356,21 @@ test_personas <- test_personas %>% mutate_at(variables_categoricas_personas, as.
 ## Creacion variables desde Personas a Hogares -----------
 # Test hogares con 66168 obs
 # Train hogares con 164960 obs
-rm(list = ls())
 write.csv(train_personas, file = "train_personas2.csv")
 write.csv(test_personas, file = "test_personas2.csv")
 write.csv(train_hogares, file = "train_hogares2.csv")
 write.csv(test_hogares, file = "test_hogares2.csv")
+
+rm(list = ls())
 
 train_personas <- read.csv("train_personas2.csv")
 train_hogares <- read.csv("train_hogares2.csv")
 test_personas <- read.csv("test_personas2.csv")
 test_hogares <- read.csv("test_hogares2.csv")
 
+
+colnames(train_personas)
+colnames(test_personas)
 
 
 edad_jefe <- train_personas %>% filter(Parentesco == "Jefe") %>% 
@@ -427,7 +431,7 @@ rm(trabajo_suma)
 
 cot_pension <- train_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(pension = ifelse(Pension == "si", 1, 0))
+  summarise(pension = ifelse(Pension == "Si", 1, 0))
 summary(cot_pension)
 train_hogares <- left_join(train_hogares, cot_pension, by = "id")
 rm(cot_pension)
@@ -435,7 +439,7 @@ rm(cot_pension)
 
 pago_arriendo_pen <- train_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == 1, 1, 0))
+  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == "Si", 1, 0))
 summary(pago_arriendo_pen)
 train_hogares <- left_join(train_hogares, pago_arriendo_pen, by = "id")
 rm(pago_arriendo_pen)
@@ -443,7 +447,7 @@ rm(pago_arriendo_pen)
 
 pago_otros <- train_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(Pago_otros = ifelse(Pago_otros == 1, 1, 0))
+  summarise(Pago_otros = ifelse(Pago_otros == "Si", 1, 0))
 summary(pago_otros)
 train_hogares <- left_join(train_hogares, pago_otros, by = "id")
 rm(pago_otros)
@@ -455,6 +459,8 @@ desempleo <- train_personas %>% filter(Parentesco == "Jefe") %>%
 summary(desempleo)
 train_hogares <- left_join(train_hogares, desempleo, by = "id")
 rm(desempleo)
+
+
 
 
 # Ahora con las bases de test
@@ -515,7 +521,7 @@ rm(trabajo_suma)
 
 cot_pension <- test_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(pension = ifelse(Pension == "si", 1, 0))
+  summarise(pension = ifelse(Pension == "Si", 1, 0))
 summary(cot_pension)
 test_hogares <- left_join(test_hogares, cot_pension, by = "id")
 rm(cot_pension)
@@ -523,7 +529,7 @@ rm(cot_pension)
 
 pago_arriendo_pen <- test_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == 1, 1, 0))
+  summarise(Pago_arr_pen = ifelse(Pago_arr_pen == "Si", 1, 0))
 summary(pago_arriendo_pen)
 test_hogares <- left_join(test_hogares, pago_arriendo_pen, by = "id")
 rm(pago_arriendo_pen)
@@ -531,7 +537,7 @@ rm(pago_arriendo_pen)
 
 pago_otros <- test_personas %>% filter(Parentesco == "Jefe") %>% 
   group_by(id) %>% 
-  summarise(Pago_otros = ifelse(Pago_otros == 1, 1, 0))
+  summarise(Pago_otros = ifelse(Pago_otros == "Si", 1, 0))
 summary(pago_otros)
 test_hogares <- left_join(test_hogares, pago_otros, by = "id")
 rm(pago_otros)
@@ -546,6 +552,18 @@ rm(desempleo)
 
 
 
+
+## MODELOS ------------------
+# Modelo de RF
+# Variables a considerar:
+# Cuartos + Cuartos_dormir + EstadoVivienda + Est_amort_mes + Personas_hogar + Depto + edad_max + tiempo_edu + educ_superior + educ_media + 
+
+
+
+#receta_test_adicional <- recipe(Pobre ~ edad_prom_hogar + Nper  + P5000 +  casa_propia_paga  + cantidad_pet_hogar + educ_prom_hogar + desempleados, data = train_data) %>% 
+#  step_novel(all_nominal_predictors()) %>% 
+#  step_dummy(all_nominal_predictors()) %>% 
+#  step_zv(all_predictors())
 
 
 
